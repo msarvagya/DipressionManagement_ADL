@@ -40,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,10 +61,14 @@ import com.ms.dm.ui.auth.EmailAuthCard
 import com.ms.dm.ui.profile.ProfileScreen
 import com.ms.dm.ui.progress.ProgressScreen
 import com.ms.dm.ui.theme.DMTheme
+import com.ms.dm.ui.tools.AiChatScreen
+import com.ms.dm.ui.tools.GamesScreen
+import com.ms.dm.ui.tools.ToolsScreen
 
 @Composable
 fun MainScreen(viewModel: MainViewModel = viewModel()) {
     var selectedItem by remember { mutableIntStateOf(0) }
+    var toolsSubDestination by remember { mutableStateOf("TOOLS") } // "TOOLS", "GAMES", or "CHAT"
 
     val userProfile by viewModel.userProfile.collectAsState()
     val dailyMoods by viewModel.dailyMoods.collectAsState()
@@ -100,7 +105,12 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         icon = { Icon(icons[index], contentDescription = item) },
                         label = { Text(item) },
                         selected = selectedItem == index,
-                        onClick = { selectedItem = index }
+                        onClick = {
+                            selectedItem = index
+                            if (index != 2) {
+                                toolsSubDestination = "TOOLS"
+                            }
+                        }
                     )
                 }
             }
@@ -126,7 +136,23 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 dailyMoods = dailyMoods,
                 innerPadding = innerPadding
             )
-            2 -> SimplePlaceholderScreen("Self-Help Tools", innerPadding)
+            2 -> {
+                when (toolsSubDestination) {
+                    "GAMES" -> GamesScreen(
+                        onNavigateBack = { toolsSubDestination = "TOOLS" },
+                        innerPadding = innerPadding
+                    )
+                    "CHAT" -> AiChatScreen(
+                        onNavigateBack = { toolsSubDestination = "TOOLS" },
+                        innerPadding = innerPadding
+                    )
+                    else -> ToolsScreen(
+                        onOpenGames = { toolsSubDestination = "GAMES" },
+                        onOpenAiChat = { toolsSubDestination = "CHAT" },
+                        innerPadding = innerPadding
+                    )
+                }
+            }
             3 -> ProfileScreen(
                 userProfile = userProfile,
                 onSaveProfile = { updated -> viewModel.saveProfile(updated) },
@@ -145,34 +171,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 onSendVerification = {},
                 onCheckVerification = {},
                 onMoodSelected = {}
-            )
-        }
-    }
-}
-
-@Composable
-fun SimplePlaceholderScreen(title: String, innerPadding: PaddingValues) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Coming soon...",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
             )
         }
     }
